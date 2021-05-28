@@ -1,0 +1,62 @@
+version: "3.7"
+
+x-defaults:
+  network: &network
+    networks:
+      - lamp-netowrk
+
+services:
+  php:
+    image: lamp
+    ports:
+      - 82:80
+      - 444:443
+    volumes:
+      - workspace:/var/www
+    configs:
+      - source: apache-vhosts
+        target: /etc/apache2/sites-available/000-default.conf
+      - source: php-ini
+        target: /usr/local/etc/php/conf.d/local.ini
+    networks:
+      - lamp-network
+
+  db:
+    image: mysql:latest
+    ports:
+      - 3308:3306
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_PASSWORD}
+      - MYSQL_USER=${DB_USER}
+      - MYSQL_PASSWORD=${DB_PASS}
+    volumes:
+      - mysql-wiki-data:/var/lib/mysql
+    # secrets:
+    #   - db_pwd
+    # <<: *network
+    networks:
+      lamp-network:
+        ipv4_address: 172.28.0.5
+
+# secrets:
+#   db_pwd:
+#     file: ./mysql/root_password.txt
+
+configs:
+  apache-vhosts:
+    file: ./apache/vhosts.conf
+  php-ini:
+    file: ./php/local.ini
+
+volumes:
+  workspace:
+    external: true
+  mysql-wiki-data:
+    external: true
+
+networks:
+  lamp-network:
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.28.0.0/16
